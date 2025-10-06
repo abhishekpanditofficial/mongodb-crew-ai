@@ -1,38 +1,30 @@
-# MongoDB Atlas Performance Analysis Report
+## Security Findings Report for MongoDB Atlas Project
 
-## Cluster Performance Findings
+### IP Access List
+- The IP access list contains the entry `0.0.0.0/0`, which allows unrestricted access from any IP address.
+  - **Vulnerability**: This configuration poses a high security risk as it enables potential unauthorized access to the database.
 
-### Cluster: `spotme`
-- **CPU Usage**: Unable to retrieve metrics, thus cannot assess if CPU usage exceeds 75%.
-- **Disk IOPS**: Unable to retrieve metrics, therefore unclear if IOPS exceeds 1000.
-- **Network Utilization**: Unable to retrieve metrics, so network input/output utilization is unknown.
-- **Command Ops**: Unable to retrieve metrics, thus information on command operations per second remains unavailable.
+### TLS/SSL Configuration
+- The cluster enforces TLS version `TLS1_2`.
+- The connection strings include `ssl=true`, indicating that SSL/TLS is enforced for connections.
+  - **Vulnerability**: While TLS is enforced, ensure that your application also correctly handles SSL/TLS connections to prevent man-in-the-middle attacks. The minimum enabled TLS protocol is adequate.
 
-### Process Performance Findings
-- **Process**: `atlas-fnkdul-shard-00-00.z4ebs.mongodb.net`
-  - **CPU Usage**: Unable to retrieve metrics.
-  - **Disk IOPS**: Unable to retrieve metrics.
-  - **Network Utilization**: Unable to retrieve metrics.
-  - **Command Ops**: Unable to retrieve metrics.
+### Database Users and Roles
+- Database user: `spotmeapp` with the role `atlasAdmin` for the `admin` database.
+  - **Vulnerability**: The `atlasAdmin` role grants broad administrative access, which may exceed the necessary privileges. This could lead to privilege escalation risks if the account is compromised.
 
-- **Process**: `atlas-fnkdul-shard-00-01.z4ebs.mongodb.net`
-  - **CPU Usage**: Unable to retrieve metrics.
-  - **Disk IOPS**: Unable to retrieve metrics.
-  - **Network Utilization**: Unable to retrieve metrics. 
-  - **Command Ops**: Unable to retrieve metrics.
+### Encryption Settings
+- Encryption at Rest is currently disabled with no external KMS (Key Management Service) configured.
+  - **Vulnerability**: Without encryption at rest, sensitive data stored in the database is exposed to unauthorized access. Enabling encryption is crucial for data security compliance.
 
-- **Process**: `atlas-fnkdul-shard-00-02.z4ebs.mongodb.net`
-  - **CPU Usage**: Unable to retrieve metrics.
-  - **Disk IOPS**: Unable to retrieve metrics.
-  - **Network Utilization**: Unable to retrieve metrics.
-  - **Command Ops**: Unable to retrieve metrics.
-
-## Summary
-Due to consistent errors in fetching metrics, I have been unable to assess the performance of the MongoDB clusters accurately. This report lacks critical insights regarding CPU usage, disk IOPS, network utilization, and command operation counts.
+## Summary of Vulnerabilities
+1. Open IP access with `0.0.0.0/0` allowing unrestricted access.
+2. Overly privileged database user with `atlasAdmin` role.
+3. Disabled encryption at rest poses a risk to sensitive information.
 
 ## Recommendations
-1. **Check API Status**: Monitor MongoDB Atlas' API status for any ongoing issues that may affect data retrieval.
-2. **Verify Permissions**: Ensure the correct permissions are set for accessing cluster metrics.
-3. **Inspect Network Configuration**: Look into any network configurations or firewalls that might block API calls from being processed correctly.
-4. **Retry Metrics Retrieval**: Attempt to retrieve metrics again at a later time, as the issues may be temporary.
-5. **Contact Support**: If persistent issues occur, contacting MongoDB support for assistance on metric retrieval could provide clarity on any underlying problems.
+1. **Restrict IP Access**: Update the IP access list to include only trusted IP addresses or ranges. Remove the `0.0.0.0/0` entry to prevent unauthorized access.
+2. **Review User Roles**: Reassess the privileges of the `spotmeapp` account. Limit the role to a lesser privilege level such as `readWrite` if full administrative access is not required.
+3. **Enable Encryption at Rest**: Activate encryption at rest for the database. Configure an external KMS to manage encryption keys securely.
+4. **Conduct Regular Security Audits**: Perform periodic reviews of security configurations, user roles, and access controls to ensure compliance with best practices.
+5. **Monitor Security Events**: Set up monitoring for unauthorized access attempts and unusual activity in the database.

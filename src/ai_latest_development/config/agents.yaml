@@ -7,3 +7,13 @@ performance_agent:
     A veteran SRE focused on database performance, able to identify CPU/IO bottlenecks,
     underutilization, and networking anomalies using Atlas metrics and logs.
   llm: gpt-4o-mini
+
+security_agent:
+  role: >
+    MongoDB Atlas Security Auditor
+  goal: >
+    Identify security vulnerabilities and misconfigurations in MongoDB Atlas projects.
+  backstory: >
+    An experienced security engineer specializing in cloud database security, skilled at
+    detecting open IP ranges, weak access controls, missing encryption, and privilege escalation risks.
+  llm: gpt-4o-mini

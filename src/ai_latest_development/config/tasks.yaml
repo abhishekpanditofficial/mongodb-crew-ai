@@ -1,22 +1,97 @@
 performance_task:
   description: >
-    Using the atlas_performance_tool, fetch clusters and 6-hour measurements for CPU, disk IOPS,
-    network bytes in/out, and command ops. Detect high CPU (>75% avg), high IOPS (>1000 max), low
-    utilization (low net in <10k avg or low ops <50 avg), and high egress (>10,000,000 avg out).
-    Produce a concise Markdown section per cluster/process with bullet insights and a closing list
-    of general recommendations.
+    Use atlas_performance_tool to fetch ALL clusters and 6-hour performance measurements.
+    For EACH cluster and process, analyze: CPU usage patterns, disk IOPS trends, memory utilization,
+    network I/O (bytes in/out), connection counts, and operations per second (query, insert, update, delete).
+    
+    Create a DETAILED Markdown report with:
+    1. Executive Summary - overall performance health across all clusters
+    2. Per-Cluster Analysis - dedicated section for each cluster with:
+       - Current configuration (instance size, region, replica count)
+       - Resource utilization metrics with actual numbers and percentages
+       - Performance bottlenecks identified (high CPU >75%, disk saturation >80%, slow queries)
+       - Comparison of provisioned vs actual usage
+    3. Critical Issues - list of urgent performance problems requiring immediate attention
+    4. Optimization Recommendations - 5-7 specific, actionable recommendations with expected impact
+    
+    Be thorough and data-driven. Include actual metric values, not just generic statements.
   expected_output: >
-    Structured Markdown including sections per cluster with findings, followed by a short summary and 3-5 recommendations.
+    Comprehensive Markdown performance report (minimum 300 words) with executive summary,
+    detailed per-cluster analysis with metrics, critical issues list, and 5-7 specific
+    optimization recommendations. Must include actual numbers from the metrics.
   agent: performance_agent
 
 security_task:
   description: >
-    Using the atlas_security_tool, fetch and analyze security configurations: IP access list
-    (check for 0.0.0.0/0), database users and roles (identify overly privileged accounts like
-    atlasAdmin, root, dbAdmin), TLS enforcement in cluster connection strings, and encryption
-    at rest settings (check for external KMS). Generate a security findings report with
-    bullet-point vulnerabilities and a recommendations list.
+    Use atlas_security_tool to perform a COMPREHENSIVE security audit of the MongoDB Atlas project.
+    
+    Analyze and report on:
+    1. IP Access List - examine every entry, flag 0.0.0.0/0 or overly broad ranges, assess risk level
+    2. Database Users & Roles - list ALL users, their roles, databases they access, identify excessive privileges
+    3. TLS/SSL Configuration - verify TLS version (minimum TLS 1.2), check connection string enforcement
+    4. Encryption at Rest - determine if enabled, check for external KMS (AWS/Azure/GCP), flag if using default keys
+    5. Network Security - check VPC peering, private endpoints, public exposure
+    6. Authentication Methods - review SCRAM, X.509, LDAP configurations
+    
+    Create a DETAILED Markdown security audit report with:
+    1. Executive Summary - overall security posture (Critical/High/Medium/Low risk)
+    2. Detailed Findings - one section per security domain with:
+       - Current configuration details
+       - Specific vulnerabilities found (with severity: Critical/High/Medium/Low)
+       - Real-world attack scenarios enabled by each vulnerability
+       - Compliance implications (PCI-DSS, HIPAA, SOC2, GDPR)
+    3. Risk Assessment - prioritized list of security risks with impact analysis
+    4. Remediation Roadmap - 5-7 specific, actionable security improvements with urgency levels
+    
+    Be CRITICAL. Every security gap must be identified and explained in detail.
   expected_output: >
-    Structured Markdown security report with sections for IP access, TLS/SSL, user roles, encryption,
-    followed by a vulnerability summary and 3-5 security recommendations.
+    Comprehensive Markdown security audit report (minimum 400 words) with executive summary,
+    detailed findings per security domain (IP access, users/roles, TLS, encryption, network),
+    risk assessment with severity ratings, and 5-7 specific remediation steps with urgency levels.
+    Must include actual configuration details and explain WHY each issue is a risk.
   agent: security_agent
+
+cost_task:
+  description: >
+    Use atlas_cost_tool to perform a RUTHLESS, data-driven cost optimization analysis.
+    
+    For EACH cluster, analyze:
+    1. Compute Costs - instance type (M0/M2/M5/M10/M20/M30/etc.), replication factor, shard count
+    2. Storage Costs - disk size (GB), IOPS provisioned, volume type (STANDARD/PROVISIONED)
+    3. Backup Costs - continuous backup enabled, PIT recovery, snapshot frequency, retention period
+    4. Data Transfer - network ingress/egress patterns, cross-region transfer costs
+    5. Autoscaling Configuration - min/max instance sizes, scaling triggers, efficiency
+    6. Actual Utilization - 24-hour metrics: CPU %, memory %, connections, ops/sec, disk usage %
+    
+    Calculate cost waste by comparing:
+    - Provisioned capacity vs actual usage (e.g., M10 but only 5% CPU = waste)
+    - Backup costs vs actual recovery needs
+    - Network costs from inefficient data access patterns
+    - Idle or underutilized clusters costing money
+    
+    Create a DETAILED Markdown cost analysis report with:
+    1. Executive Summary - total monthly spend estimate, total waste identified, potential savings
+    2. Per-Cluster Cost Breakdown - for EACH cluster include:
+       - Current configuration with estimated monthly cost in USD
+       - Actual resource utilization with specific metrics (CPU %, memory %, disk %, ops/sec)
+       - Overprovisioning analysis - exactly how much capacity is wasted
+       - Right-sizing recommendation with new config and monthly savings in USD
+    3. Backup Cost Analysis - current backup costs, optimization opportunities, savings
+    4. Infrastructure Waste Report - idle clusters, oversized instances, unnecessary replicas
+    5. Cost Optimization Roadmap - 7-10 specific actions with:
+       - Current cost
+       - Recommended change
+       - Estimated monthly savings
+       - Annual savings projection
+       - Implementation effort (Easy/Medium/Hard)
+    6. Summary Table - total potential monthly and annual savings
+    
+    Be EXTREMELY CRITICAL. Use actual MongoDB Atlas pricing. Calculate real dollar amounts.
+    Every dollar of waste must be identified and quantified.
+  expected_output: >
+    Comprehensive Markdown cost analysis report (minimum 500 words) with executive summary showing
+    total potential savings, detailed per-cluster cost breakdown with current spend vs optimized spend,
+    backup cost analysis, infrastructure waste report, and 7-10 specific cost-cutting recommendations
+    with estimated monthly and annual USD savings for each. Must include ACTUAL pricing calculations
+    and utilization percentages. Include a final summary table of all savings opportunities.
+  agent: cost_agent

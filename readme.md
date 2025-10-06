@@ -1,14 +1,93 @@
 # MongoDB Atlas AI Ops Multi-Agent System
 
-A comprehensive **4-agent CrewAI system** that performs automated analysis of MongoDB Atlas infrastructure across performance, security, cost efficiency, and generates executive-level consolidated reports with health scoring.
+A comprehensive **5-agent CrewAI system** that performs automated analysis of MongoDB Atlas infrastructure across performance, security, cost efficiency, schema design, and generates executive-level consolidated reports with health scoring.
 
 ## 🎯 System Overview
 
 This multi-agent system analyzes MongoDB Atlas environments and produces AI-driven reports covering:
-- **Performance optimization** (CPU, slow queries, cluster sizing)
+- **Performance optimization** (CPU, slow queries, cluster sizing, **index recommendations**)
 - **Security analysis** (IP access, roles, TLS, encryption)
 - **Cost optimization** (overprovisioning, backup costs, idle resources)
+- **Schema analysis & data modeling** (collection schemas, relationships, embedding vs referencing)
 - **Executive synthesis** (health scoring, prioritization, ROI analysis)
+
+## ✨ Latest Enhancement: Index Analysis & Query Optimization
+
+The PerformanceAgent now provides **comprehensive index optimization recommendations** by integrating three powerful analysis methods:
+
+### What's New?
+1. **MongoDB Performance Advisor Integration** - Gets AI-powered index suggestions directly from Atlas
+2. **Slow Query Analysis** - Identifies queries >100ms with full execution details  
+3. **Index Efficiency Scoring** - Calculates scan ratios to detect missing indexes
+4. **Ready-to-Execute Commands** - Provides exact `createIndex()` statements
+
+### Example Output
+When the agent runs, you'll now get detailed sections like:
+
+**🎯 Index Suggestions:**
+- Specific collections that need indexes
+- Exact field names and sort orders `{ email: 1, created_at: -1 }`
+- Expected query performance improvement (ms saved per query)
+- JavaScript commands ready to paste into `mongosh`
+
+**🐌 Slow Query Identification:**
+- Query patterns causing performance issues
+- Execution times and document scan counts
+- Which collections are doing full scans
+
+**📊 Efficiency Scoring:**
+- Per-process scan ratio analysis (scanned objects / returned docs)
+- "Poor/Fair/Good" efficiency ratings
+- Quantified impact of missing indexes
+
+> **Note:** Performance Advisor requires M10+ cluster tier. M0/M2 free tiers will show limited data.
+
+## 🆕 NEW: Schema Analysis & Data Modeling Agent
+
+The **SchemaAgent** is a powerful addition that directly connects to your MongoDB database to analyze schemas and provide expert data modeling recommendations:
+
+### What It Does:
+1. **Discovers Collections** - Automatically finds all collections in your database
+2. **Infers Schemas** - Samples 100+ documents per collection to understand data structures
+3. **Detects Relationships** - Identifies foreign keys and references between collections
+4. **Analyzes Indexes** - Lists existing indexes and flags missing ones
+5. **Evaluates Data Models** - Assesses embedding vs referencing patterns
+6. **Recommends Optimizations** - Provides 10-15 specific schema improvements
+
+### Key Features:
+- **Field Type Analysis:** Detects mixed types, nullability, nested objects, arrays
+- **Relationship Mapping:** Creates ASCII diagrams showing collection dependencies
+- **Index Recommendations:** Provides exact `createIndex()` commands for performance
+- **Embedding vs Referencing:** Advises when to embed (1-to-few) vs reference (1-to-many)
+- **Denormalization Strategies:** Identifies read-heavy data that should be duplicated
+- **Document Size Analysis:** Flags oversized documents (>5KB) for optimization
+- **Migration Plans:** Step-by-step instructions for implementing changes
+
+### Example Recommendations:
+```markdown
+### Recommendation 1: Missing Index on Foreign Key
+**Collection:** `orders`
+**Issue:** Field `user_id` is not indexed, causing slow lookups
+**Impact:** HIGH - Affects 50,000+ queries per day
+**Command:**
+```javascript
+db.orders.createIndex({ user_id: 1 }, { name: "idx_user_id" });
+```
+
+### Recommendation 2: Embedding Opportunity
+**Collections:** `users` → `addresses`
+**Current:** `addresses` is a separate collection with `user_id` reference
+**Issue:** 1-to-1 relationship causing unnecessary lookups
+**Recommendation:** Embed `addresses` into `users` collection
+**Benefit:** Eliminates 10,000+ daily JOIN-like queries, reduces latency by 80%
+```
+
+### Configuration:
+Set these environment variables in `.env`:
+```bash
+MONGODB_CONNECTION_STRING=mongodb+srv://user:pass@cluster.mongodb.net/
+MONGODB_DATABASE=your_database_name
+```
 
 ## 🧠 Agent Architecture
 
@@ -17,6 +96,9 @@ This multi-agent system analyzes MongoDB Atlas environments and produces AI-driv
 
 **Responsibilities:**
 - Fetches 6-hour performance metrics (CPU, IOPS, memory, network, ops/sec)
+- **🔍 Index Analysis:** Retrieves Performance Advisor suggestions, slow query logs, and calculates index efficiency ratios
+- **📊 Query Performance:** Analyzes documents scanned vs returned to identify missing indexes
+- **🐌 Slow Queries:** Identifies queries >100ms with execution patterns
 - Detects bottlenecks and resource saturation
 - Identifies underutilized clusters
 - Generates detailed performance analysis per cluster
@@ -24,8 +106,13 @@ This multi-agent system analyzes MongoDB Atlas environments and produces AI-driv
 **Outputs:**
 - Executive summary of performance health
 - Per-cluster resource utilization analysis
+- **INDEX OPTIMIZATION SECTION** with:
+  - Suggested indexes from MongoDB Performance Advisor (specific field names)
+  - Slow query analysis with execution times and query shapes
+  - Index efficiency ratios (scan ratios indicating index usage)
+  - Ready-to-execute `CREATE INDEX` commands
 - Critical performance issues list
-- 5-7 optimization recommendations with expected impact
+- 7-10 optimization recommendations including specific index creation steps
 
 ---
 
@@ -67,7 +154,44 @@ This multi-agent system analyzes MongoDB Atlas environments and produces AI-driv
 
 ---
 
-### 4️⃣ **ReportSynthesizer** 📊
+### 4️⃣ **SchemaAgent** 📐
+**Tool:** `mongodb_schema_tool.py`
+
+**Responsibilities:**
+- **🔍 Collection Discovery:** Connects to MongoDB and discovers all collections
+- **📊 Schema Inference:** Samples documents to infer field types, nested structures, arrays
+- **🔗 Relationship Detection:** Identifies foreign keys, references, one-to-many relationships
+- **📇 Index Analysis:** Lists existing indexes and identifies missing ones
+- **🏗️ Data Modeling Evaluation:** Analyzes embedding vs referencing patterns
+- **💡 Optimization Recommendations:** Provides expert guidance on schema refactoring
+
+**Outputs:**
+- Executive summary of schema health
+- Complete collection inventory with statistics (doc count, sizes, indexes)
+- Per-collection schema details with field types and sample values
+- Relationship diagram showing how collections reference each other
+- Data modeling analysis (when to embed vs reference)
+- 10-15 specific schema optimization recommendations:
+  - Missing indexes with CREATE INDEX commands
+  - Embedding opportunities to reduce lookups
+  - Denormalization strategies for read-heavy patterns
+  - Document size optimizations
+  - Schema refactoring for consistency
+- Migration plan with step-by-step instructions
+- Code examples and aggregation pipelines
+
+**MongoDB Best Practices Applied:**
+- Embed for 1-to-1 and 1-to-few relationships
+- Reference for 1-to-many and many-to-many
+- Index all foreign key fields
+- Denormalize read-heavy data
+- Avoid unbounded arrays (>1000 items)
+- Keep documents under 16MB (ideally <5KB average)
+- Use discriminator patterns for polymorphic data
+
+---
+
+### 5️⃣ **ReportSynthesizer** 📊
 **Tool:** `report_synthesis_tool.py`
 
 **Responsibilities:**
@@ -215,12 +339,71 @@ Weighted average of three domains:
 ## 🔧 Architecture Details
 
 ### Tools
-All tools use **HTTP Digest Authentication** to call MongoDB Atlas Management API:
 
-- `atlas_performance_tool.py` - Fetches clusters, processes, and measurements
+**Atlas Management API Tools** (use HTTP Digest Authentication):
+- `atlas_performance_tool.py` - Fetches clusters, processes, measurements, **Performance Advisor suggestions**, **slow query logs**, and calculates **index efficiency ratios**
 - `atlas_security_tool.py` - Fetches IP access lists, users, clusters, encryption config
 - `atlas_cost_tool.py` - Combines cluster config + utilization metrics for cost analysis
+
+**Direct MongoDB Connection Tools** (use connection string):
+- `mongodb_schema_tool.py` - Connects to MongoDB database, discovers collections, infers schemas, detects relationships, analyzes indexes, recommends data modeling improvements
+
+**Synthesis & Reporting Tools**:
 - `report_synthesis_tool.py` - Parses report.md, calculates scores, correlates findings
+
+### 🔍 Index Analysis Features (PerformanceAgent)
+
+The Performance tool now provides comprehensive index optimization insights:
+
+**1. Performance Advisor Suggested Indexes**
+- Queries MongoDB's built-in Performance Advisor API
+- Returns specific field names to index
+- Includes expected query time savings
+- Available on M10+ clusters
+
+**2. Slow Query Logs**
+- Identifies queries with >100ms execution time
+- Shows query shapes and patterns
+- Reports documents examined vs documents returned ratio
+- Helps prioritize index creation by impact
+
+**3. Index Efficiency Analysis**
+- Calculates scan ratios: `scanned_objects / scanned_docs`
+- **Ratio > 10:** Poor efficiency - missing indexes likely
+- **Ratio 3-10:** Fair efficiency - review query patterns
+- **Ratio < 3:** Good efficiency - indexes being used effectively
+- Based on `QUERY_EXECUTOR_SCANNED` and `QUERY_EXECUTOR_SCANNED_OBJECTS` metrics
+
+**Example Output:**
+```markdown
+### Index Optimization Recommendations
+
+#### Cluster: Cluster0 | Process: cluster0-shard-00-00.mongodb.net:27017
+
+**Suggested Indexes (Performance Advisor):**
+- `db.users` - Create index on `{ email: 1, created_at: -1 }` → Expected savings: 250ms/query
+- `db.orders` - Create index on `{ user_id: 1, status: 1 }` → Expected savings: 180ms/query
+
+**Slow Queries Detected:**
+- `db.users.find({ email: "..." }).sort({ created_at: -1 })` - 312ms avg execution time
+- Examined: 125,000 docs | Returned: 1 doc | Scan Ratio: 125,000x
+
+**Index Efficiency:**
+- Scan Ratio: 45.2 (Poor - Missing indexes likely)
+- Average Scanned Objects: 45,203
+- Average Scanned Docs: 1,000
+
+**Ready-to-Execute Commands:**
+```javascript
+db.users.createIndex({ email: 1, created_at: -1 }, { name: "idx_email_created" });
+db.orders.createIndex({ user_id: 1, status: 1 }, { name: "idx_user_status" });
+```
+```
+
+**Note:** Performance Advisor and slow query logs require:
+- M10+ cluster tier (not available on M0/M2 free/shared tiers)
+- Database profiling enabled (Atlas enables this automatically on M10+)
+- Sufficient query history for analysis
 
 ### Agent Configuration
 Agents are defined in `config/agents.yaml` with:

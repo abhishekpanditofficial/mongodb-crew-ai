@@ -9,6 +9,7 @@ from .tools.atlas_performance_tool import AtlasPerformanceTool
 from .tools.atlas_security_tool import AtlasSecurityTool
 from .tools.atlas_cost_tool import AtlasCostTool
 from .tools.report_synthesis_tool import ReportSynthesisTool
+from .tools.mongodb_schema_tool import MongoDBSchemaTool
 
 load_dotenv()
 
@@ -67,6 +68,14 @@ class AiLatestDevelopment():
             verbose=True
         )
 
+    @agent
+    def schema_agent(self) -> Agent:
+        return Agent(
+            config=self.agents_config['schema_agent'], # type: ignore[index]
+            tools=[MongoDBSchemaTool()],
+            verbose=True
+        )
+
     # To learn more about structured task outputs,
     # task dependencies, and task callbacks, check out the documentation:
     # https://docs.crewai.com/concepts/tasks#overview-of-a-task
@@ -100,10 +109,17 @@ class AiLatestDevelopment():
         )
 
     @task
+    def schema_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['schema_task'], # type: ignore[index]
+            callback=lambda output: self._append_to_report(output, "📐 MongoDB Schema Analysis & Modeling Recommendations")
+        )
+
+    @task
     def synthesis_task(self) -> Task:
         return Task(
             config=self.tasks_config['synthesis_task'], # type: ignore[index]
-            context=[self.performance_task(), self.security_task(), self.cost_task()],
+            context=[self.performance_task(), self.security_task(), self.cost_task(), self.schema_task()],
             callback=lambda output: self._append_to_report(output, "📊 Executive Summary & Health Assessment")
         )
 

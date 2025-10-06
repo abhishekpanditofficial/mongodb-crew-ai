@@ -3,7 +3,20 @@ performance_task:
     Use atlas_performance_tool to fetch ALL clusters and 6-hour performance measurements.
     For EACH cluster and process, analyze: CPU usage patterns, disk IOPS trends, memory utilization,
     network I/O (bytes in/out), connection counts, and operations per second (query, insert, update, delete).
+
+    CRITICALLY IMPORTANT - INDEX ANALYSIS:
+    The tool now provides THREE sources of index-related insights:
+    1. **Performance Advisor Suggested Indexes** - MongoDB's built-in recommendations for missing indexes
+    2. **Slow Query Logs** - queries taking >100ms that may need optimization
+    3. **Index Efficiency Analysis** - scan ratio metrics (scanned objects vs documents returned)
     
+    For EACH process, you MUST analyze:
+    - Suggested indexes from Performance Advisor (namespace, index keys, average query execution time savings)
+    - Slow queries (namespace, query shape, execution time, documents examined vs returned)
+    - Index efficiency ratios (>10 = poor/missing indexes, 3-10 = fair, <3 = good)
+    - Collections performing full collection scans
+    - Query patterns that would benefit from compound indexes
+
     Create a DETAILED Markdown report with:
     1. Executive Summary - overall performance health across all clusters
     2. Per-Cluster Analysis - dedicated section for each cluster with:
@@ -11,14 +24,23 @@ performance_task:
        - Resource utilization metrics with actual numbers and percentages
        - Performance bottlenecks identified (high CPU >75%, disk saturation >80%, slow queries)
        - Comparison of provisioned vs actual usage
-    3. Critical Issues - list of urgent performance problems requiring immediate attention
-    4. Optimization Recommendations - 5-7 specific, actionable recommendations with expected impact
-    
+    3. **INDEX OPTIMIZATION SECTION** (CRITICAL) - For EACH cluster/process:
+       - List ALL suggested indexes with specific field names and expected impact
+       - Identify slow queries with execution times and query shapes
+       - Report scan efficiency ratios and problematic collections
+       - Prioritize index recommendations by impact (query time savings)
+       - Provide exact CREATE INDEX commands ready to execute
+    4. Critical Issues - list of urgent performance problems requiring immediate attention
+    5. Optimization Recommendations - 7-10 specific, actionable recommendations with expected impact
+       (MUST include index creation recommendations with specific field names)
+
     Be thorough and data-driven. Include actual metric values, not just generic statements.
+    If Performance Advisor data is unavailable (M0/M2 clusters), clearly state this limitation.
   expected_output: >
-    Comprehensive Markdown performance report (minimum 300 words) with executive summary,
-    detailed per-cluster analysis with metrics, critical issues list, and 5-7 specific
-    optimization recommendations. Must include actual numbers from the metrics.
+    Comprehensive Markdown performance report (minimum 400 words) with executive summary,
+    detailed per-cluster analysis with metrics, INDEX OPTIMIZATION SECTION with specific
+    CREATE INDEX commands, critical issues list, and 7-10 specific optimization recommendations.
+    Must include actual numbers from metrics and specific index recommendations with field names.
   agent: performance_agent
 
 security_task:
@@ -95,6 +117,103 @@ cost_task:
     with estimated monthly and annual USD savings for each. Must include ACTUAL pricing calculations
     and utilization percentages. Include a final summary table of all savings opportunities.
   agent: cost_agent
+
+schema_task:
+  description: >
+    Use mongodb_schema_tool to connect to the MongoDB database and perform COMPREHENSIVE schema analysis.
+
+    The tool will automatically:
+    1. Discover ALL collections in the database
+    2. Sample documents (default 100 per collection) to infer schema
+    3. Detect field types, nullable fields, and data type consistency
+    4. Identify indexes on each collection
+    5. Detect references between collections (foreign keys, one-to-many relationships)
+    6. Analyze document sizes and collection statistics
+
+    Your job as MongoDB Schema Architect is to:
+
+    **SCHEMA ANALYSIS:**
+    For EACH collection, analyze:
+    - Total documents and storage size
+    - Average document size (flag if >5KB as potential optimization target)
+    - Field structure: data types, nested objects, arrays
+    - Schema consistency: mixed types, null percentages
+    - Embedded documents vs referenced documents
+
+    **RELATIONSHIP MAPPING:**
+    - Map out ALL relationships detected between collections
+    - Identify foreign key patterns (fields ending in _id, _ref)
+    - Detect one-to-many relationships (array of IDs)
+    - Create a visual ASCII diagram of collection relationships
+    - Flag potential circular references or overly complex relationships
+
+    **INDEX ANALYSIS:**
+    - List ALL existing indexes per collection
+    - Identify missing indexes on foreign key fields
+    - Flag collections without indexes on commonly queried fields
+    - Detect redundant or unused indexes
+    - Recommend compound indexes for common query patterns
+
+    **DATA MODELING RECOMMENDATIONS:**
+    Provide 10-15 specific recommendations covering:
+
+    1. **Embedding vs Referencing:**
+       - When to embed related data (1-to-1, 1-to-few with <100 items)
+       - When to use references (1-to-many, many-to-many)
+       - Identify collections that should be embedded for better performance
+
+    2. **Denormalization Opportunities:**
+       - Frequently joined data that should be denormalized
+       - Read-heavy fields that could be duplicated to avoid lookups
+       - Tradeoffs: write complexity vs read performance
+
+    3. **Schema Optimization:**
+       - Collections with too many fields (>50) that need refactoring
+       - Large document sizes that should be split or use GridFS
+       - Inconsistent field types that cause query issues
+       - Arrays that have grown too large (>1000 items)
+
+    4. **Index Strategy:**
+       - Missing indexes causing slow queries
+       - Compound indexes for multi-field queries
+       - Text indexes for search functionality
+       - Geospatial indexes if location data exists
+
+    5. **Polymorphic Patterns:**
+       - If collections have mixed document types, recommend discriminator patterns
+       - Suggest schema versioning strategies
+
+    6. **Query Pattern Optimization:**
+       - Design schemas to match application query patterns
+       - Identify anti-patterns (n+1 queries, unbounded arrays)
+       - Suggest aggregation pipeline optimizations
+
+    Create a DETAILED Markdown report with:
+    1. **Executive Summary** - overall schema health, key findings
+    2. **Collection Inventory** - table of all collections with stats
+    3. **Schema Details** - per-collection deep dive with field types and indexes
+    4. **Relationship Diagram** - ASCII or markdown visualization of collection relationships
+    5. **Data Modeling Analysis** - evaluation of current patterns (embedding, referencing, denormalization)
+    6. **Index Optimization** - comprehensive index recommendations with CREATE INDEX commands
+    7. **Schema Refactoring Recommendations** - 10-15 specific improvements prioritized by impact
+    8. **Migration Plan** - step-by-step guide for implementing recommended changes
+    9. **Code Examples** - actual MongoDB commands and aggregation pipelines for migrations
+
+    Be EXTREMELY detailed. Include actual field names, collection names, and executable commands.
+    Compare current schema against MongoDB best practices and provide specific, actionable guidance.
+  expected_output: >
+    Comprehensive Markdown schema analysis report (minimum 500 words) with:
+    - Executive summary of schema health
+    - Complete collection inventory with statistics
+    - Per-collection schema details with field types and indexes
+    - Relationship diagram showing how collections reference each other
+    - Data modeling evaluation (embedding vs referencing patterns)
+    - 10-15 specific schema optimization recommendations with priority levels
+    - Index recommendations with exact CREATE INDEX commands
+    - Migration plan with step-by-step instructions
+    - Code examples for schema refactoring
+    Must include actual collection names, field names, and executable MongoDB commands.
+  agent: schema_agent
 
 synthesis_task:
   description: >

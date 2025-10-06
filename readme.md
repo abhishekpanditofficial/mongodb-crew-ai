@@ -42,6 +42,74 @@ When the agent runs, you'll now get detailed sections like:
 
 > **Note:** Performance Advisor requires M10+ cluster tier. M0/M2 free tiers will show limited data.
 
+## 🆕 NEW: Data Compliance & Security Scanning
+
+The **SecurityAgent** now includes **mongodb_compliance_tool** that scans your actual database collections for compliance violations!
+
+### What It Detects:
+
+**1. PII (Personally Identifiable Information):**
+- Unencrypted emails, phone numbers, addresses
+- Social Security Numbers (regex: `\d{3}-\d{2}-\d{4}`)
+- Passport numbers, national IDs
+- Date of birth fields
+
+**2. Sensitive Data Storage:**
+- Plaintext passwords (checks if properly hashed)
+- API keys, OAuth tokens, JWT tokens
+- Private keys, certificates, secrets
+- Field names like: `password`, `secret`, `token`, `api_key`
+
+**3. PCI-DSS Violations (CRITICAL):**
+- Credit card numbers (regex: `\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}`)
+- CVV codes, card expiration dates
+- Bank account numbers, routing numbers
+- **Recommendation:** NEVER store credit cards - use Stripe/PayPal tokenization
+
+**4. HIPAA Violations:**
+- Medical records, diagnoses, prescriptions
+- Health insurance information
+- Patient identifiers without encryption
+
+**5. GDPR Compliance:**
+- Missing consent tracking (`consent_date`, `consent_version`)
+- No data processing legal basis documented
+- Data older than 2 years (retention policy violations)
+- Missing "right to erasure" implementation
+
+### Example Violations Found:
+
+```markdown
+### Collection: users
+**Violation 1: PII Exposure**
+- **Field:** `email`
+- **Severity:** HIGH
+- **Issue:** Email addresses stored without field-level encryption
+- **Recommendation:** Implement MongoDB field-level encryption or ensure proper access controls
+- **Compliance:** GDPR
+
+**Violation 2: Sensitive Data**
+- **Field:** `password`
+- **Severity:** CRITICAL
+- **Issue:** Password field detected - verify it's properly hashed (bcrypt/scrypt)
+- **Recommendation:** Ensure passwords use bcrypt with salt rounds ≥ 12
+- **Compliance:** GDPR, PCI-DSS
+
+**Violation 3: GDPR - Missing Consent**
+- **Severity:** MEDIUM
+- **Issue:** User collection lacks GDPR consent tracking fields
+- **Recommendation:** Add fields: `gdpr_consent`, `consent_date`, `consent_version`, `marketing_consent`
+- **Compliance:** GDPR
+```
+
+### Scan Results Include:
+- **Total violations** by severity (Critical/High/Medium/Low)
+- **Per-collection breakdown** with field names
+- **Compliance framework violations** (GDPR: 5, PCI-DSS: 0, HIPAA: 0)
+- **Actionable recommendations** (delete, encrypt, hash, tokenize)
+
+---
+
 ## 🆕 NEW: Schema Analysis & Data Modeling Agent
 
 The **SchemaAgent** is a powerful addition that directly connects to your MongoDB database to analyze schemas and provide expert data modeling recommendations:
@@ -117,20 +185,37 @@ MONGODB_DATABASE=your_database_name
 ---
 
 ### 2️⃣ **SecurityAgent** 🔒
-**Tool:** `atlas_security_tool.py`
+**Tools:** `atlas_security_tool.py` + `mongodb_compliance_tool.py` ✨NEW
 
 **Responsibilities:**
+
+**Infrastructure Security:**
 - Audits IP access lists (detects 0.0.0.0/0 exposure)
 - Analyzes database user roles and privileges
 - Verifies TLS/SSL enforcement
 - Checks encryption at rest configuration
 
+**🆕 Data Compliance Scanning:**
+- **PII Detection:** Scans collections for emails, phone numbers, SSNs, addresses
+- **Sensitive Data:** Detects plaintext passwords, API keys, JWT tokens, secrets
+- **PCI-DSS Compliance:** Flags credit card numbers, CVV codes (should NEVER be stored)
+- **HIPAA Violations:** Identifies medical records, prescriptions, health data
+- **GDPR Compliance:** Checks for consent tracking, data retention policies, legal basis
+- **Pattern Matching:** Uses regex to find SSNs, credit cards, API keys in field values
+- **Field Name Analysis:** Detects suspicious field names (password, secret, token, ssn, credit_card)
+
 **Outputs:**
 - Security posture assessment (Critical/High/Medium/Low)
-- Detailed findings per security domain
-- Vulnerability analysis with attack scenarios
-- Compliance implications (PCI-DSS, HIPAA, SOC2, GDPR)
-- 5-7 remediation steps with urgency levels
+- Infrastructure findings (IP access, TLS, encryption, roles)
+- **DATA COMPLIANCE VIOLATIONS** section:
+  - Violation counts by severity (Critical/High/Medium/Low)
+  - Per-collection breakdown with specific field names
+  - PII exposure list (what personal data is unencrypted)
+  - Sensitive data found (passwords, keys, tokens)
+  - PCI-DSS/GDPR/HIPAA violation summaries
+- Compliance framework analysis
+- 10-15 remediation steps prioritized by urgency
+- Specific recommendations (hash passwords, delete credit cards, encrypt PII)
 
 ---
 

@@ -45,32 +45,104 @@ performance_task:
 
 security_task:
   description: >
-    Use atlas_security_tool to perform a COMPREHENSIVE security audit of the MongoDB Atlas project.
+    Perform a COMPREHENSIVE security audit using TWO tools:
     
-    Analyze and report on:
+    1. **atlas_security_tool** - Audit MongoDB Atlas infrastructure security
+    2. **mongodb_compliance_tool** - Scan actual database collections for data compliance violations
+    
+    YOU MUST USE BOTH TOOLS to provide complete security coverage.
+    
+    **INFRASTRUCTURE SECURITY (atlas_security_tool):**
     1. IP Access List - examine every entry, flag 0.0.0.0/0 or overly broad ranges, assess risk level
     2. Database Users & Roles - list ALL users, their roles, databases they access, identify excessive privileges
     3. TLS/SSL Configuration - verify TLS version (minimum TLS 1.2), check connection string enforcement
     4. Encryption at Rest - determine if enabled, check for external KMS (AWS/Azure/GCP), flag if using default keys
     5. Network Security - check VPC peering, private endpoints, public exposure
     6. Authentication Methods - review SCRAM, X.509, LDAP configurations
+
+    **DATA COMPLIANCE SCAN (mongodb_compliance_tool):**
+    Scan ALL collections for:
+    
+    1. **PII Exposure:**
+       - Unencrypted emails, phone numbers, addresses
+       - Social Security Numbers (SSNs)
+       - Passport numbers, driver's licenses
+       - Date of birth, personal identifiers
+    
+    2. **Sensitive Data Storage Violations:**
+       - Plaintext passwords (check if properly hashed with bcrypt/scrypt)
+       - API keys, access tokens, refresh tokens stored in database
+       - JWT tokens, OAuth secrets
+       - Private keys, certificates
+    
+    3. **PCI-DSS Violations (CRITICAL):**
+       - Credit card numbers in any collection
+       - CVV codes (should NEVER be stored)
+       - Card expiration dates
+       - Bank account numbers, routing numbers
+    
+    4. **HIPAA Violations:**
+       - Medical records, diagnoses, prescriptions
+       - Health insurance information
+       - Patient identifiers without proper encryption
+    
+    5. **GDPR Compliance:**
+       - Missing consent tracking fields (consent_date, consent_version)
+       - No data processing legal basis documented
+       - Lack of data retention policies
+       - User data older than 2 years without justification
+    
+    6. **Data That Should NOT Be Stored:**
+       - Full credit card numbers (use tokenization)
+       - Plaintext passwords (must be hashed)
+       - Unencrypted SSNs
+       - Raw API keys (use secret management)
+    
+    For EACH violation found, report:
+    - Collection name
+    - Field name
+    - Severity (Critical/High/Medium/Low)
+    - Compliance framework violated (GDPR/PCI-DSS/HIPAA)
+    - Specific recommendation (encryption, deletion, tokenization, etc.)
+    - Sample document index (for investigation)
     
     Create a DETAILED Markdown security audit report with:
-    1. Executive Summary - overall security posture (Critical/High/Medium/Low risk)
-    2. Detailed Findings - one section per security domain with:
-       - Current configuration details
-       - Specific vulnerabilities found (with severity: Critical/High/Medium/Low)
-       - Real-world attack scenarios enabled by each vulnerability
-       - Compliance implications (PCI-DSS, HIPAA, SOC2, GDPR)
-    3. Risk Assessment - prioritized list of security risks with impact analysis
-    4. Remediation Roadmap - 5-7 specific, actionable security improvements with urgency levels
+    1. **Executive Summary** - overall security posture (Critical/High/Medium/Low risk)
+    2. **Infrastructure Security Findings** - Atlas configuration vulnerabilities
+    3. **DATA COMPLIANCE VIOLATIONS** (NEW SECTION):
+       - Total violations found (Critical/High/Medium/Low counts)
+       - PII exposure details by collection
+       - Sensitive data found (passwords, keys, tokens)
+       - PCI-DSS violations (credit cards)
+       - GDPR violations (missing consent, old data)
+       - Specific field names and collections affected
+    4. **Compliance Framework Summary:**
+       - GDPR violations count and details
+       - PCI-DSS violations count and details
+       - HIPAA violations count and details
+    5. **Risk Assessment** - prioritized list of ALL security risks with impact analysis
+    6. **Remediation Roadmap** - 10-15 specific, actionable security improvements:
+       - Infrastructure fixes (IP whitelist, encryption at rest, etc.)
+       - Data compliance fixes (delete credit cards, hash passwords, encrypt PII)
+       - Implementation priority (Immediate/High/Medium/Low)
+       - Estimated effort (Easy/Medium/Hard)
     
-    Be CRITICAL. Every security gap must be identified and explained in detail.
+    Be EXTREMELY CRITICAL. Every security gap and compliance violation must be identified.
+    Include actual field names, collection names, and specific violation counts.
   expected_output: >
-    Comprehensive Markdown security audit report (minimum 400 words) with executive summary,
-    detailed findings per security domain (IP access, users/roles, TLS, encryption, network),
-    risk assessment with severity ratings, and 5-7 specific remediation steps with urgency levels.
-    Must include actual configuration details and explain WHY each issue is a risk.
+    Comprehensive Markdown security audit report (minimum 600 words) with:
+    - Executive summary with overall risk rating
+    - Infrastructure security findings (Atlas configuration)
+    - DATA COMPLIANCE VIOLATIONS section with:
+      * Violation counts by severity (Critical/High/Medium/Low)
+      * Per-collection breakdown of violations
+      * Specific field names containing sensitive data
+      * PII exposure list
+      * PCI-DSS/GDPR/HIPAA violations
+    - Compliance framework summary (GDPR/PCI-DSS/HIPAA violation counts)
+    - Risk assessment with business impact
+    - 10-15 specific remediation steps prioritized by urgency
+    Must include actual field names, collection names, and violation counts.
   agent: security_agent
 
 cost_task:

@@ -10,6 +10,7 @@ from .tools.atlas_security_tool import AtlasSecurityTool
 from .tools.atlas_cost_tool import AtlasCostTool
 from .tools.report_synthesis_tool import ReportSynthesisTool
 from .tools.mongodb_schema_tool import MongoDBSchemaTool
+from .tools.mongodb_compliance_tool import MongoDBComplianceTool
 
 load_dotenv()
 
@@ -48,7 +49,7 @@ class AiLatestDevelopment():
     def security_agent(self) -> Agent:
         return Agent(
             config=self.agents_config['security_agent'], # type: ignore[index]
-            tools=[AtlasSecurityTool()],
+            tools=[AtlasSecurityTool(), MongoDBComplianceTool()],
             verbose=True
         )
 

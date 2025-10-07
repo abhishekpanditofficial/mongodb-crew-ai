@@ -1,23 +1,30 @@
 performance_task:
   description: >
-    Use atlas_performance_tool to fetch ALL clusters and 6-hour performance measurements.
-    For EACH cluster and process, analyze: CPU usage patterns, disk IOPS trends, memory utilization,
-    network I/O (bytes in/out), connection counts, and operations per second (query, insert, update, delete).
-
-    CRITICALLY IMPORTANT - INDEX ANALYSIS:
-    The tool now provides THREE sources of index-related insights:
-    1. **Performance Advisor Suggested Indexes** - MongoDB's built-in recommendations for missing indexes
-    2. **Slow Query Logs** - queries taking >100ms that may need optimization
-    3. **Index Efficiency Analysis** - scan ratio metrics (scanned objects vs documents returned)
+    **PROGRESSIVE DISCLOSURE PATTERN - Make MULTIPLE focused tool calls!**
     
-    For EACH process, you MUST analyze:
-    - Suggested indexes from Performance Advisor (namespace, index keys, average query execution time savings)
-    - Slow queries (namespace, query shape, execution time, documents examined vs returned)
-    - Index efficiency ratios (>10 = poor/missing indexes, 3-10 = fair, <3 = good)
-    - Collections performing full collection scans
-    - Query patterns that would benefit from compound indexes
-
-    Create a DETAILED Markdown report with:
+    The atlas_performance_tool supports different modes to avoid overwhelming the context.
+    You MUST make SEPARATE calls for complete analysis:
+    
+    **Step 1: Get Overview**
+    Call: atlas_performance_tool(mode='summary')
+    Returns: Cluster names, sizes, regions, process counts, time window
+    
+    **Step 2: Get Performance Issues**
+    Call: atlas_performance_tool(mode='issues')
+    Returns: Top 3 critical issues (high CPU, poor indexes, high connections)
+    
+    **Step 3: Get Index Recommendations**
+    Call: atlas_performance_tool(mode='indexes')
+    Returns: Top 3 index recommendations with namespaces and field names
+    
+    **Step 4: Get Slow Queries**
+    Call: atlas_performance_tool(mode='queries')
+    Returns: Top 2 slow queries with execution counts and query patterns
+    
+    NOTE: ALL complete data (metrics, processes, full recommendations) is saved in
+    performance_data_TIMESTAMP.json file. The mode-based calls return only prioritized insights.
+    
+    After gathering insights from ALL 4 calls above, create a DETAILED Markdown report with:
     1. Executive Summary - overall performance health across all clusters
     2. Per-Cluster Analysis - dedicated section for each cluster with:
        - Current configuration (instance size, region, replica count)

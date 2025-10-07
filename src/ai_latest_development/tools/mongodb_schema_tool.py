@@ -16,7 +16,7 @@ class MongoDBSchemaInput(BaseModel):
         default=None, description="MongoDB database name; falls back to env MONGODB_DATABASE"
     )
     sample_size: int = Field(
-        default=100, description="Number of documents to sample per collection for schema inference"
+        default=25, description="Number of documents to sample per collection for schema inference (reduced for performance)"
     )
 
 
@@ -29,7 +29,7 @@ class MongoDBSchemaTool(BaseTool):
     )
     args_schema: Type[BaseModel] = MongoDBSchemaInput
 
-    def _run(self, database_name: Optional[str] = None, sample_size: int = 100) -> Dict[str, Any]:
+    def _run(self, database_name: Optional[str] = None, sample_size: int = 25) -> Dict[str, Any]:
         connection_string = os.getenv("MONGODB_CONNECTION_STRING")
         resolved_db_name = database_name or os.getenv("MONGODB_DATABASE")
 
@@ -41,12 +41,28 @@ class MongoDBSchemaTool(BaseTool):
         try:
             # Connect to MongoDB
             client = MongoClient(connection_string, serverSelectionTimeoutMS=10000)
-            client.admin.command('ping')  # Test connection
+            
+            # Test connection
+            try:
+                client.admin.command('ping')
+            except Exception as e:
+                return {
+                    "error": f"Cannot connect to MongoDB: {str(e)}. Check connection string."
+                }
             
             db = client[resolved_db_name]
             
-            # Get all collections
-            collections = db.list_collection_names()
+            # Get all collections with error handling
+            try:
+                collections = db.list_collection_names()
+                if not collections:
+                    return {
+                        "error": f"No collections found in database '{resolved_db_name}' or insufficient permissions."
+                    }
+            except Exception as e:
+                return {
+                    "error": f"Cannot access database '{resolved_db_name}': {str(e)}. Check user permissions."
+                }
             
             schema_analysis: Dict[str, Any] = {
                 "database": resolved_db_name,
@@ -55,6 +71,8 @@ class MongoDBSchemaTool(BaseTool):
                 "detected_relationships": [],
                 "modeling_recommendations": [],
             }
+
+            print(f"Analyzing {len(collections)} collections with sample size {sample_size} (most recent documents)...")
 
             # Analyze each collection
             for collection_name in collections:
@@ -66,8 +84,22 @@ class MongoDBSchemaTool(BaseTool):
                 except OperationFailure:
                     stats = {}
                 
-                # Sample documents to infer schema
-                sample_docs = list(collection.find().limit(sample_size))
+                # Sample MOST RECENT documents to infer schema (sort by _id descending)
+                # This ensures we get the latest data structure which is more relevant
+                try:
+                    sample_docs = list(collection.find().sort("_id", -1).limit(sample_size))
+                    print(f"  ✓ Sampled {len(sample_docs)} recent documents from {collection_name}")
+                except Exception as e:
+                    # If sorting fails, try without sort
+                    print(f"  ⚠️  Cannot sort {collection_name}, using unsorted sample")
+                    try:
+                        sample_docs = list(collection.find().limit(sample_size))
+                    except Exception as e2:
+                        print(f"  ❌ Cannot read {collection_name}: {str(e2)}")
+                        schema_analysis["collections"][collection_name] = {
+                            "error": f"Cannot read collection: {str(e2)}"
+                        }
+                        continue
                 
                 # Infer schema from samples
                 schema_info = self._infer_schema(sample_docs)

@@ -17,7 +17,7 @@ class MongoDBComplianceInput(BaseModel):
         default=None, description="MongoDB database name; falls back to env MONGODB_DATABASE"
     )
     sample_size: int = Field(
-        default=200, description="Number of documents to sample per collection for compliance scanning"
+        default=50, description="Number of documents to sample per collection for compliance scanning (reduced for performance)"
     )
 
 
@@ -54,7 +54,7 @@ class MongoDBComplianceTool(BaseTool):
         'passport', 'driver_license', 'ssn', 'tax_id', 'national_id'
     }
 
-    def _run(self, database_name: Optional[str] = None, sample_size: int = 200) -> Dict[str, Any]:
+    def _run(self, database_name: Optional[str] = None, sample_size: int = 50) -> Dict[str, Any]:
         connection_string = os.getenv("MONGODB_CONNECTION_STRING")
         resolved_db_name = database_name or os.getenv("MONGODB_DATABASE")
 
@@ -65,10 +65,28 @@ class MongoDBComplianceTool(BaseTool):
 
         try:
             client = MongoClient(connection_string, serverSelectionTimeoutMS=10000)
-            client.admin.command('ping')
+            
+            # Test connection and check authorization
+            try:
+                client.admin.command('ping')
+            except Exception as e:
+                return {
+                    "error": f"Cannot connect to MongoDB: {str(e)}. Check connection string."
+                }
             
             db = client[resolved_db_name]
-            collections = db.list_collection_names()
+            
+            # Test database access with better error handling
+            try:
+                collections = db.list_collection_names()
+                if not collections:
+                    return {
+                        "error": f"No collections found in database '{resolved_db_name}' or insufficient permissions."
+                    }
+            except Exception as e:
+                return {
+                    "error": f"Cannot access database '{resolved_db_name}': {str(e)}. Check user permissions."
+                }
             
             compliance_report: Dict[str, Any] = {
                 "database": resolved_db_name,
@@ -95,7 +113,22 @@ class MongoDBComplianceTool(BaseTool):
 
             for collection_name in collections:
                 collection = db[collection_name]
-                sample_docs = list(collection.find().limit(sample_size))
+                
+                # Sample most recent documents (sort by _id descending = newest first)
+                # This ensures we get the latest data structure
+                try:
+                    sample_docs = list(collection.find().sort("_id", -1).limit(sample_size))
+                except Exception as e:
+                    # If sorting fails, try without sort
+                    print(f"Warning: Cannot sort collection {collection_name}, using unsorted sample: {str(e)}")
+                    try:
+                        sample_docs = list(collection.find().limit(sample_size))
+                    except Exception as e2:
+                        print(f"Error: Cannot read collection {collection_name}: {str(e2)}")
+                        compliance_report["violations_by_collection"][collection_name] = {
+                            "error": f"Cannot read collection: {str(e2)}"
+                        }
+                        continue
                 
                 if not sample_docs:
                     continue

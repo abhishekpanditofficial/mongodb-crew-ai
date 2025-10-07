@@ -287,6 +287,49 @@ schema_task:
     Must include actual collection names, field names, and executable MongoDB commands.
   agent: schema_agent
 
+html_generation_task:
+  description: >
+    Generate a complete, beautiful HTML report from the report.md file using the llm_html_generator tool.
+    
+    The tool will provide you with the report content and instructions. Your job is to:
+    
+    1. **Read the report content** provided by the tool
+    2. **Extract key metrics** from the report:
+       - Health scores (Performance, Security, Cost, Overall)
+       - Compliance violation counts (Critical, High, Medium, Low)
+       - Key findings from each section
+    
+    3. **Generate COMPLETE HTML code** including:
+       - Full HTML5 structure (<!DOCTYPE html>, <html>, <head>, <body>)
+       - Embedded CSS in <style> tags with modern, professional styling
+       - Header with project info and gradient background
+       - Health score dashboard with 4 color-coded cards
+       - Interactive charts using Chart.js (from CDN)
+       - All report sections formatted beautifully
+       - Responsive design for mobile/tablet/desktop
+       - Print-optimized styles
+       - Professional footer
+    
+    4. **Save the HTML** by writing it to mongodb_atlas_report.html file
+    
+    **CRITICAL REQUIREMENTS:**
+    - Generate the COMPLETE HTML from <!DOCTYPE html> to </html>
+    - Include Chart.js from CDN: https://cdn.jsdelivr.net/npm/chart.js
+    - All CSS must be embedded (no external stylesheets)
+    - Parse health scores and violation counts from the report text
+    - Use beautiful gradients, shadows, and modern design
+    - Make charts interactive with hover tooltips
+    - Ensure code blocks have syntax highlighting
+    - Make it print-friendly
+    
+    Return the complete HTML code in your response.
+  expected_output: >
+    Complete HTML file code (5000+ lines) with embedded CSS and JavaScript,
+    including interactive Chart.js visualizations, responsive design, and all
+    report sections beautifully formatted. The HTML should be production-ready
+    and open correctly in any modern web browser.
+  agent: html_generator_agent
+
 synthesis_task:
   description: >
     Use report_synthesis_tool to read the comprehensive report.md file containing outputs from

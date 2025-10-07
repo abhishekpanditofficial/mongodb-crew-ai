@@ -4,12 +4,21 @@ A comprehensive **5-agent CrewAI system** that performs automated analysis of Mo
 
 ## 🎯 System Overview
 
-This multi-agent system analyzes MongoDB Atlas environments and produces AI-driven reports covering:
+This multi-agent system analyzes MongoDB Atlas environments and produces **beautiful PDF reports** with charts and visualizations covering:
 - **Performance optimization** (CPU, slow queries, cluster sizing, **index recommendations**)
-- **Security analysis** (IP access, roles, TLS, encryption)
+- **Security analysis** (IP access, roles, TLS, encryption, **data compliance scanning**)
 - **Cost optimization** (overprovisioning, backup costs, idle resources)
 - **Schema analysis & data modeling** (collection schemas, relationships, embedding vs referencing)
 - **Executive synthesis** (health scoring, prioritization, ROI analysis)
+
+### 📄 Report Formats:
+- **PDF Report** (Primary) - Professional formatted report with:
+  - 📊 Health score dashboard with pie charts
+  - 📈 Compliance violations bar charts
+  - 🎨 Color-coded priority indicators
+  - 📑 Multi-page structured layout
+  - 🔢 Page numbers and footers
+- **Markdown Report** (Backup) - Full text report in `report.md`
 
 ## ✨ Latest Enhancement: Index Analysis & Query Optimization
 

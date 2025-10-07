@@ -11,6 +11,7 @@ from .tools.atlas_cost_tool import AtlasCostTool
 from .tools.report_synthesis_tool import ReportSynthesisTool
 from .tools.mongodb_schema_tool import MongoDBSchemaTool
 from .tools.mongodb_compliance_tool import MongoDBComplianceTool
+from .tools.llm_html_generator import LLMHTMLGeneratorTool
 
 load_dotenv()
 
@@ -77,6 +78,15 @@ class AiLatestDevelopment():
             verbose=True
         )
 
+    @agent
+    def html_generator_agent(self) -> Agent:
+        return Agent(
+            config=self.agents_config['html_generator_agent'], # type: ignore[index]
+            tools=[LLMHTMLGeneratorTool()],
+            verbose=True,
+            allow_delegation=False
+        )
+
     # To learn more about structured task outputs,
     # task dependencies, and task callbacks, check out the documentation:
     # https://docs.crewai.com/concepts/tasks#overview-of-a-task
@@ -123,6 +133,46 @@ class AiLatestDevelopment():
             context=[self.performance_task(), self.security_task(), self.cost_task(), self.schema_task()],
             callback=lambda output: self._append_to_report(output, "📊 Executive Summary & Health Assessment")
         )
+
+    @task
+    def html_generation_task(self) -> Task:
+        return Task(
+            config=self.tasks_config['html_generation_task'], # type: ignore[index]
+            context=[self.synthesis_task()],
+            callback=lambda output: self._save_html_report(output)
+        )
+
+    def _save_html_report(self, output):
+        """Save the LLM-generated HTML report"""
+        try:
+            html_content = str(output.raw)
+            
+            # Extract HTML from the output (agent might wrap it)
+            if '<!DOCTYPE html>' in html_content:
+                start_idx = html_content.index('<!DOCTYPE html>')
+                end_idx = html_content.rindex('</html>') + 7
+                html_content = html_content[start_idx:end_idx]
+            
+            # Save HTML file
+            with open('mongodb_atlas_report.html', 'w', encoding='utf-8') as f:
+                f.write(html_content)
+            
+            abs_path = os.path.abspath('mongodb_atlas_report.html')
+            file_size = os.path.getsize('mongodb_atlas_report.html')
+            
+            print("\n" + "="*60)
+            print("✅ HTML REPORT GENERATED SUCCESSFULLY!")
+            print("="*60)
+            print(f"📄 File: {abs_path}")
+            print(f"📏 Size: {round(file_size / 1024, 2)} KB")
+            print(f"🌐 Open in browser: file://{abs_path}")
+            print("\n💡 Tip: Use 'Print to PDF' in your browser to convert to PDF")
+            print("="*60)
+            
+        except Exception as e:
+            print(f"\n⚠️  Error saving HTML report: {str(e)}")
+            print("   The agent's response might not contain valid HTML")
+            print(f"   Raw output length: {len(str(output.raw))} characters")
 
     @crew
     def crew(self) -> Crew:
